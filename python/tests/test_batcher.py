@@ -44,7 +44,6 @@ sys.path.insert(0, _PKG_ROOT)
 # that the real backend does not need to be installed in this environment.
 import triton_backend_utils.batcher as batcher_mod  # noqa: E402
 
-
 # ---------------------------------------------------------------------------
 # Test doubles that mimic the triton_python_backend_utils runtime.
 # ---------------------------------------------------------------------------
@@ -67,9 +66,7 @@ class _FakeRequest:
         self._tensors = {name: _FakeTensor(arr) for name, arr in tensor_map.items()}
 
     def inputs(self) -> List:
-        return [
-            type("_In", (), {"name": n})() for n in self._tensors
-        ]
+        return [type("_In", (), {"name": n})() for n in self._tensors]
 
     def __getitem__(self, key: str) -> _FakeTensor:
         return self._tensors[key]
@@ -107,12 +104,16 @@ class _FakePbUtils:
 batcher_mod.pb_utils = _FakePbUtils()
 
 
-def _make_requests(n: int = 3, *, shape=(4,), dtype=np.float32, prefix="INPUT") -> List[_FakeRequest]:
+def _make_requests(
+    n: int = 3, *, shape=(4,), dtype=np.float32, prefix="INPUT"
+) -> List[_FakeRequest]:
     """Helper that produces n identical-shape fake requests."""
     return [
         _FakeRequest(
-            {f"{prefix}0": np.full(shape, fill_value=i, dtype=dtype),
-             f"{prefix}1": np.full(shape, fill_value=i + 10, dtype=dtype)}
+            {
+                f"{prefix}0": np.full(shape, fill_value=i, dtype=dtype),
+                f"{prefix}1": np.full(shape, fill_value=i + 10, dtype=dtype),
+            }
         )
         for i in range(n)
     ]
@@ -165,8 +166,12 @@ class TestStackInputTensors:
     def test_missing_input_raises(self):
         # Both have INPUT0 with same shape, but second is missing INPUT1.
         reqs = [
-            _FakeRequest({"INPUT0": np.zeros(4, dtype=np.float32),
-                          "INPUT1": np.zeros(4, dtype=np.float32)}),
+            _FakeRequest(
+                {
+                    "INPUT0": np.zeros(4, dtype=np.float32),
+                    "INPUT1": np.zeros(4, dtype=np.float32),
+                }
+            ),
             _FakeRequest({"INPUT0": np.ones(4, dtype=np.float32)}),
         ]
         with pytest.raises(batcher_mod.MissingInputError):
@@ -211,8 +216,18 @@ class TestStackInputTensors:
         assert out["INPUT0"].dtype == np.float64
 
     def test_various_dtypes(self):
-        for dt in [np.float16, np.float32, np.float64, np.int8, np.int16,
-                    np.int32, np.int64, np.uint8, np.bool_, np.complex64]:
+        for dt in [
+            np.float16,
+            np.float32,
+            np.float64,
+            np.int8,
+            np.int16,
+            np.int32,
+            np.int64,
+            np.uint8,
+            np.bool_,
+            np.complex64,
+        ]:
             reqs = [_FakeRequest({"X": np.zeros(4, dtype=dt)}) for _ in range(2)]
             out = batcher_mod.stack_input_tensors(reqs, ["X"])
             assert out["X"].dtype == dt
@@ -255,7 +270,9 @@ class TestBatchInputs:
         per_request = batcher_mod.split_output_arrays(batched_out, 3, ["OUTPUT"])
         assert len(per_request) == 3
         for i, d in enumerate(per_request):
-            expected = np.full(6, i, dtype=np.float32) + np.full(6, i + 10, dtype=np.float32)
+            expected = np.full(6, i, dtype=np.float32) + np.full(
+                6, i + 10, dtype=np.float32
+            )
             np.testing.assert_array_equal(d["OUTPUT"], expected)
 
 
@@ -285,7 +302,9 @@ class TestSplitOutputArrays:
 
     def test_bad_sequence_length_raises(self):
         with pytest.raises(ValueError):
-            batcher_mod.split_output_arrays([np.zeros((3, 4)), np.zeros((3, 2))], 3, ["A"])
+            batcher_mod.split_output_arrays(
+                [np.zeros((3, 4)), np.zeros((3, 2))], 3, ["A"]
+            )
 
     def test_missing_names_for_plain_array(self):
         with pytest.raises(ValueError):
@@ -320,8 +339,10 @@ class TestSplitOutputArrays:
 class TestSplitOutputs:
     def test_returns_inference_responses(self):
         requests = _make_requests(3)
-        batched = {"OUT0": np.zeros((3, 4), dtype=np.float32),
-                    "OUT1": np.ones((3, 4), dtype=np.float32)}
+        batched = {
+            "OUT0": np.zeros((3, 4), dtype=np.float32),
+            "OUT1": np.ones((3, 4), dtype=np.float32),
+        }
         responses = batcher_mod.split_outputs(batched, requests, ["OUT0", "OUT1"])
         assert len(responses) == 3
         for resp in responses:
@@ -369,7 +390,8 @@ class TestEndToEndExecute:
         out_sub = bi["INPUT0"] - bi["INPUT1"]
         responses = batcher_mod.split_outputs(
             {"OUTPUT0": out_add, "OUTPUT1": out_sub},
-            requests, ["OUTPUT0", "OUTPUT1"],
+            requests,
+            ["OUTPUT0", "OUTPUT1"],
         )
         assert len(responses) == 4
         for i, resp in enumerate(responses):

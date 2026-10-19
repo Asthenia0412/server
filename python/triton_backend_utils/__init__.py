@@ -33,17 +33,17 @@ This module provides helper functions that let Python backend models
 """
 
 from .batcher import (
-    batch_inputs,
-    split_outputs,
     BatchedInputs,
-    stack_input_tensors,
+    batch_inputs,
     split_output_arrays,
+    split_outputs,
+    stack_input_tensors,
 )
 
 __all__ = [
-    "batch_inputs",
-    "split_outputs",
     "BatchedInputs",
-    "stack_input_tensors",
+    "batch_inputs",
     "split_output_arrays",
+    "split_outputs",
+    "stack_input_tensors",
 ]

@@ -45,7 +45,7 @@ implementations used in unit tests.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -139,8 +139,7 @@ class BatchedInputs(Mapping[str, np.ndarray]):
 
     def __repr__(self) -> str:
         items = ", ".join(
-            f"{k!r}: shape={v.shape}, dtype={v.dtype}"
-            for k, v in self._arrays.items()
+            f"{k!r}: shape={v.shape}, dtype={v.dtype}" for k, v in self._arrays.items()
         )
         return f"BatchedInputs(batch_size={self._batch_size}, {items})"
 
@@ -160,7 +159,9 @@ def _get_request_input_names(request: Any) -> List[str]:
     # 1. Modern API: request.inputs() returns a list of InferenceInput.
     try:
         inputs = request.inputs()
-        return [getattr(t, "name", None) or "" for t in inputs if getattr(t, "name", None)]
+        return [
+            getattr(t, "name", None) or "" for t in inputs if getattr(t, "name", None)
+        ]
     except Exception:
         pass
 
@@ -303,7 +304,6 @@ def stack_input_tensors(
             )
 
     input_names = list(input_names)
-    num_requests = len(requests)
     stacked: Dict[str, np.ndarray] = {}
 
     for name in input_names:
@@ -505,8 +505,6 @@ def split_outputs(
 
     responses = []
     for per_req_dict in per_request:
-        tensors = [
-            pb_utils.Tensor(name, arr) for name, arr in per_req_dict.items()
-        ]
+        tensors = [pb_utils.Tensor(name, arr) for name, arr in per_req_dict.items()]
         responses.append(pb_utils.InferenceResponse(tensors))
     return responses
